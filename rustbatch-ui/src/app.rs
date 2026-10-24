@@ -94,14 +94,16 @@ pub fn build_ui(app: &gtk::Application) {
     });
 
     let drop_target = gtk::DropTarget::new(gtk::gdk::FileList::static_type(), gtk::gdk::DragAction::COPY);
+    let drop_target = gtk::DropTarget::new(gtk::gdk::FileList::static_type(), gtk::gdk::DragAction::COPY);
     drop_target.connect_drop({
         let list_store = list_store.clone();
         let state = state.clone();
         move |_, value, _, _| {
             if let Ok(file_list) = value.get::<gtk::gdk::FileList>() {
-                let mut st = state.borrow_mut(); // PRECISA DE mut
                 for file in file_list.files() {
-                    if let Some(path) = file.path() { add_job(&list_store, &mut st, path); } // PRECISA DE &mut
+                    if let Some(path) = file.path() { 
+                        add_job(&list_store, &state, path); 
+                    }
                 }
             }
             true
@@ -117,10 +119,11 @@ pub fn build_ui(app: &gtk::Application) {
                 let list_store = list_store.clone(); let state = state.clone();
                 move |result| {
                     if let Ok(files) = result {
-                        let mut st = state.borrow_mut();
                         for i in 0..files.n_items() {
                             if let Some(file) = files.item(i).and_downcast::<gtk::gio::File>() {
-                                if let Some(path) = file.path() { add_job(&list_store, &mut st, path); }
+                                if let Some(path) = file.path() { 
+                                    add_job(&list_store, &state, path); 
+                                }
                             }
                         }
                     }
@@ -155,13 +158,20 @@ pub fn build_ui(app: &gtk::Application) {
     window.present();
 }
 
-fn add_job(list_store: &gio::ListStore, state: &mut AppState, path: PathBuf) {
+fn add_job(list_store: &gio::ListStore, state: &Rc<RefCell<AppState>>, path: PathBuf) {
     if let Ok(meta) = rustbatch_core::discovery::inspect_file(&path) {
         let ui_job = UiJob {
             name: path.file_name().and_then(|n| n.to_str()).unwrap_or("(sem nome)").to_string(),
             width: meta.width, height: meta.height, path: path.clone(),
         };
-        state.jobs.push(ui_job.clone());
+        
+        // Escopo isolado: o empréstimo mutável é liberado ao sair do bloco
+        {
+            let mut st = state.borrow_mut();
+            st.jobs.push(ui_job.clone());
+        } // <-- O borrow_mut é dropado AQUI, antes de chamar o append
+        
+        // Agora o GTK pode disparar o selection_notify sem pânico
         list_store.append(&glib::BoxedAnyObject::new(ui_job));
     }
 }
