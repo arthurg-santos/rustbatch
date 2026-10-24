@@ -52,13 +52,28 @@ pub fn build_ui(app: &gtk::Application) {
     right_box.append(&gtk::Separator::new(gtk::Orientation::Horizontal));
     right_box.append(&settings_panel);
 
+    // NOVO: Envolve o painel direito em um ScrolledWindow para ele não forçar a janela a crescer
+    let right_scrolled = gtk::ScrolledWindow::builder()
+        .child(&right_box)
+        .vexpand(true)
+        .build();
+
     let paned = gtk::Paned::new(gtk::Orientation::Horizontal);
     paned.set_start_child(Some(&scrolled));
-    paned.set_end_child(Some(&right_box));
+    paned.set_end_child(Some(&right_scrolled)); // <-- Usa a nova variável
     paned.set_position(600);
+    paned.set_vexpand(true);
+    
+    // NOVO: Permite que os painéis encolham, para a barra inferior caber na tela
+    paned.set_resize_start_child(true);
+    paned.set_resize_end_child(true);
+    paned.set_shrink_start_child(true);
+    paned.set_shrink_end_child(true);
 
     let progress = gtk::ProgressBar::new();
     progress.set_show_text(true);
+    progress.set_hexpand(true); 
+    
     let start_btn = gtk::Button::with_label("Iniciar processamento");
     let cancel_btn = gtk::Button::with_label("Cancelar");
     cancel_btn.set_sensitive(false);
@@ -72,6 +87,9 @@ pub fn build_ui(app: &gtk::Application) {
     bottom.append(&progress);
     bottom.append(&start_btn);
     bottom.append(&cancel_btn);
+    
+    // NOVO: Garante que a barra inferior mantenha sua altura natural
+    bottom.set_vexpand(false);
 
     let root = gtk::Box::new(gtk::Orientation::Vertical, 0);
     root.append(&paned);
@@ -93,7 +111,7 @@ pub fn build_ui(app: &gtk::Application) {
         }
     });
 
-    let drop_target = gtk::DropTarget::new(gtk::gdk::FileList::static_type(), gtk::gdk::DragAction::COPY);
+    // Corrigido: Removida a linha duplicada que estava aqui
     let drop_target = gtk::DropTarget::new(gtk::gdk::FileList::static_type(), gtk::gdk::DragAction::COPY);
     drop_target.connect_drop({
         let list_store = list_store.clone();
@@ -136,7 +154,7 @@ pub fn build_ui(app: &gtk::Application) {
         let list_store = list_store.clone(); let state = state.clone();
         let progress = progress.clone(); let cancel_btn = cancel_btn.clone();
         move |btn| {
-            let st = state.borrow_mut();
+            let st = state.borrow();
             if st.jobs.is_empty() { return; }
             btn.set_sensitive(false); cancel_btn.set_sensitive(true);
 
@@ -165,13 +183,11 @@ fn add_job(list_store: &gio::ListStore, state: &Rc<RefCell<AppState>>, path: Pat
             width: meta.width, height: meta.height, path: path.clone(),
         };
         
-        // Escopo isolado: o empréstimo mutável é liberado ao sair do bloco
         {
             let mut st = state.borrow_mut();
             st.jobs.push(ui_job.clone());
-        } // <-- O borrow_mut é dropado AQUI, antes de chamar o append
+        }
         
-        // Agora o GTK pode disparar o selection_notify sem pânico
         list_store.append(&glib::BoxedAnyObject::new(ui_job));
     }
 }
