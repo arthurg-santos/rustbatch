@@ -1,0 +1,17 @@
+[package]
+name = "rustbatch-ui"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "rustbatch"
+path = "src/main.rs"
+
+[dependencies]
+rustbatch-core = { path = "../rustbatch-core" }
+gtk4.workspace = true
+glib.workspace = true
+gio.workspace = true
+async-channel.workspace = true
+log.workspace = true
