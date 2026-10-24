@@ -6,17 +6,40 @@ use crate::model::*;
 use std::path::Path;
 
 pub fn decode_with_orientation(path: &Path) -> Result<DynamicImage, CoreError> {
-    let reader = ImageReader::open(path).map_err(|e| CoreError::io(path, e))?
-        .with_guessed_format().map_err(|e| CoreError::io(path, e))?;
-    let mut decoder = reader.into_decoder().map_err(|e| CoreError::Decode(e.to_string()))?;
-    let orientation = decoder.orientation().map_err(|e| CoreError::Decode(e.to_string()))?;
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_ascii_lowercase())
+        .unwrap_or_default();
+
+    if ext == "heic" || ext == "heif" {
+        let bytes = std::fs::read(path).map_err(|e| CoreError::io(path, e))?;
+        let img = heif::decode(&bytes)
+            .map_err(|e| CoreError::Decode(format!("HEIC decode error: {e}")))?;
+        return Ok(img);
+    }
+    
+    let reader = ImageReader::open(path)
+        .map_err(|e| CoreError::io(path, e))?
+        .with_guessed_format()
+        .map_err(|e| CoreError::io(path, e))?;
+
+    let mut decoder = reader
+        .into_decoder()
+        .map_err(|e| CoreError::Decode(e.to_string()))?;
+
+    let orientation = decoder
+        .orientation()
+        .map_err(|e| CoreError::Decode(e.to_string()))?;
+
     let mut img = DynamicImage::from_decoder(decoder).map_err(|e| CoreError::CorruptFile {
-        path: path.to_path_buf(), source: e,
+        path: path.to_path_buf(),
+        source: e,
     })?;
+
     img.apply_orientation(orientation);
     Ok(img)
 }
-
 pub fn process_image(source: &Path, cfg: &ProcessConfig) -> Result<DynamicImage, CoreError> {
     let mut img = decode_with_orientation(source)?;
     if cfg.rotation != Rotation::None { img = apply_rotation(img, cfg.rotation); }

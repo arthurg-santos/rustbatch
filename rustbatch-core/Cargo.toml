@@ -16,3 +16,4 @@ log.workspace = true
 chrono.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+heif-rs.workspace = true

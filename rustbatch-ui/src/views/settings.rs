@@ -129,8 +129,8 @@ fn build_format_page(state: Rc<RefCell<AppState>>) -> gtk::Widget {
         .build();
 
     let format_dropdown = gtk::DropDown::from_strings(&[
-        "JPEG", "PNG", "WebP (lossless)", "AVIF", "TIFF", "BMP", "GIF",
-    ]);
+        "JPEG", "PNG", "WebP (lossless)", "AVIF", "TIFF", "BMP", "GIF", "HEIC",
+]);
     grid.attach(&gtk::Label::new(Some("Formato de saída:")), 0, 0, 1, 1);
     grid.attach(&format_dropdown, 1, 0, 1, 1);
 
@@ -169,7 +169,9 @@ fn build_format_page(state: Rc<RefCell<AppState>>) -> gtk::Widget {
                 3 => OutputFormat::Avif,
                 4 => OutputFormat::Tiff,
                 5 => OutputFormat::Bmp,
-                _ => OutputFormat::Gif,
+                6 => OutputFormat::Gif,
+                7 => OutputFormat::Heic,
+                _ => OutputFormat::Jpeg,
             };
             st.config.compression.quality = if is_jpeg {
                 Some(quality_spin.value() as u8)

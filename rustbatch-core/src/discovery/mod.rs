@@ -66,6 +66,6 @@ fn is_supported_extension(path: &Path) -> bool {
             .and_then(|e| e.to_str())
             .map(|e| e.to_ascii_lowercase())
             .as_deref(),
-        Some("jpg" | "jpeg" | "png" | "webp" | "avif" | "tif" | "tiff" | "bmp" | "gif")
+        Some("jpg" | "jpeg" | "png" | "webp" | "avif" | "tif" | "tiff" | "bmp" | "gif" | "heic" | "heif")
     )
 }

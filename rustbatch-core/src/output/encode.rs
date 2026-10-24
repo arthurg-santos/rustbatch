@@ -6,6 +6,8 @@ use image::{
 };
 use crate::error::CoreError;
 use crate::model::{CompressionConfig, OutputFormat};
+use heif_rs::{HeifEncoder, Chroma, Preset};
+use image::ImageEncoder;
 
 pub fn encode_image(
     img: &DynamicImage,
@@ -72,6 +74,24 @@ pub fn encode_image(
             img.write_to(&mut std::io::Cursor::new(&mut buf), image::ImageFormat::Gif)
                 .map_err(|e| CoreError::Encode(e.to_string()))?;
             writer.write_all(&buf).map_err(|e| CoreError::Encode(e.to_string()))
+        }
+        OutputFormat::Heic => {
+            use heif::{Chroma, HeifEncoder, Preset};
+            use image::ImageEncoder;
+
+            let quality = compression.quality.unwrap_or(85).clamp(1, 100);
+            let mut bytes = Vec::new();
+            img.write_with_encoder(
+                HeifEncoder::new(&mut bytes)
+                    .with_quality(quality)
+                    .with_preset(Preset::Slow)
+                    .with_chroma(Chroma::Yuv420),
+            )
+            .map_err(|e| CoreError::Encode(format!("HEIC encode error: {e}")))?;
+
+            writer
+                .write_all(&bytes)
+                .map_err(|e| CoreError::Encode(e.to_string()))
         }
     }
 }

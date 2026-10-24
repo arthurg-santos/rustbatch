@@ -10,6 +10,7 @@ pub enum OutputFormat {
     Tiff,
     Bmp,
     Gif,
+    Heic,
 }
 
 impl OutputFormat {
@@ -22,6 +23,7 @@ impl OutputFormat {
             Self::Tiff => "tif",
             Self::Bmp => "bmp",
             Self::Gif => "gif",
+            Self::Heic => "heic",
         }
     }
 

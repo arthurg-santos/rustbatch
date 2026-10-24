@@ -13,6 +13,7 @@ authors = ["Arthur"]
 thiserror = "2.0"
 image = { version = "0.25.10", features = ["avif"] }
 imageproc = "0.25"
+heif-rs = "26.10.3"
 ab_glyph = "0.2.31"
 rayon = "1.12"
 tempfile = "3.20"
